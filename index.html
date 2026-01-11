@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Daily Belief</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Jost:ital,wght@0,300;0,400;1,300;1,400&family=Libre+Baskerville:ital@0;1&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      height: 100%;
+    }
+
+    body {
+      font-family: 'Cormorant Garamond', serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      position: relative;
+      cursor: default;
+      overflow: hidden;
+    }
+
+    body.calendar-open {
+      overflow: auto;
+    }
+
+    /* Gallery wall background */
+    .gallery-wall {
+      position: fixed;
+      inset: 0;
+      background: 
+        url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E"),
+        linear-gradient(
+          180deg,
+          #ebe5da 0%,
+          #e6dfd3 30%,
+          #e0d9cc 50%,
+          #e4ddd1 70%,
+          #e9e2d7 100%
+        );
+      background-blend-mode: soft-light, normal;
+      z-index: -2;
+    }
+
+    .lighting {
+      position: fixed;
+      inset: 0;
+      background: 
+        radial-gradient(
+          ellipse 80% 60% at 50% 40%,
+          rgba(255, 248, 235, 0.4) 0%,
+          transparent 70%
+        ),
+        radial-gradient(
+          ellipse 100% 100% at 50% 100%,
+          rgba(139, 119, 101, 0.15) 0%,
+          transparent 50%
+        );
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    .vignette {
+      position: fixed;
+      inset: 0;
+      box-shadow: inset 0 0 200px rgba(60, 50, 40, 0.3);
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    /* ========== SINGLE VIEW ========== */
+    .single-view {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      animation: fadeIn 1.2s ease-out;
+    }
+
+    .single-view.hidden {
+      display: none;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(15px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Frame base */
+    .frame {
+      padding: 10px;
+      border-radius: 1px;
+      transition: background 0.4s ease, box-shadow 0.4s ease;
+    }
+
+    /* Maple - light unstained wood */
+    .frame.maple {
+      background: linear-gradient(
+        145deg,
+        #E8DCC8 0%,
+        #DED2BC 15%,
+        #F0E4D0 35%,
+        #E5D9C5 50%,
+        #DED2BC 65%,
+        #E8DCC8 85%,
+        #D8CCBA 100%
+      );
+      box-shadow: 
+        0 20px 60px rgba(0, 0, 0, 0.22),
+        0 8px 25px rgba(0, 0, 0, 0.12),
+        inset 0 1px 0 rgba(255, 255, 255, 0.5),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.06);
+    }
+
+    /* Mahogany - warm reddish brown */
+    .frame.mahogany {
+      background: linear-gradient(
+        145deg,
+        #6B3A3A 0%,
+        #5A2E2E 15%,
+        #7A4545 35%,
+        #633535 50%,
+        #5A2E2E 65%,
+        #6B3A3A 85%,
+        #4E2626 100%
+      );
+      box-shadow: 
+        0 20px 60px rgba(0, 0, 0, 0.3),
+        0 8px 25px rgba(0, 0, 0, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.15),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.15);
+    }
+
+    /* Dark Walnut - deep rich brown */
+    .frame.walnut {
+      background: linear-gradient(
+        145deg,
+        #4A3728 0%,
+        #3D2D20 15%,
+        #564030 35%,
+        #453526 50%,
+        #3D2D20 65%,
+        #4A3728 85%,
+        #332418 100%
+      );
+      box-shadow: 
+        0 20px 60px rgba(0, 0, 0, 0.35),
+        0 8px 25px rgba(0, 0, 0, 0.25),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+    }
+
+    /* Mat/mount - cream colored */
+    .mat {
+      position: relative;
+      padding: 24px;
+      background: #FAF8F4;
+      box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.04);
+    }
+
+    /* Artwork */
+    .artwork {
+      display: block;
+      max-width: min(52vw, 460px);
+      max-height: min(52vh, 480px);
+      width: auto;
+      height: auto;
+      object-fit: contain;
+    }
+
+    /* Date inscription on mat */
+    .date-inscription {
+      position: absolute;
+      bottom: 6px;
+      right: 10px;
+      font-family: 'Libre Baskerville', serif;
+      font-size: 10px;
+      font-style: italic;
+      color: rgba(80, 70, 55, 0.6);
+      letter-spacing: 0.06em;
+    }
+
+    /* Gallery placard */
+    .placard {
+      margin-top: 32px;
+      max-width: 400px;
+      text-align: center;
+      animation: fadeIn 1.5s ease-out 0.3s both;
+    }
+
+    .placard-text {
+      font-family: 'Jost', sans-serif;
+      font-size: 16px;
+      font-weight: 300;
+      font-style: normal;
+      line-height: 1.8;
+      color: #5a534a;
+      letter-spacing: 0.02em;
+      padding: 16px 24px;
+      position: relative;
+    }
+
+
+    /* Navigation zones */
+    .nav-zone {
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      width: 15%;
+      cursor: pointer;
+      z-index: 5;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .nav-zone:hover { opacity: 1; }
+
+    .nav-zone.prev {
+      left: 0;
+      background: linear-gradient(90deg, rgba(0,0,0,0.03), transparent);
+    }
+
+    .nav-zone.next {
+      right: 0;
+      background: linear-gradient(-90deg, rgba(0,0,0,0.03), transparent);
+    }
+
+    .nav-zone::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      width: 10px;
+      height: 10px;
+      border: 2px solid rgba(90, 80, 70, 0.35);
+      border-top: none;
+      border-right: none;
+    }
+
+    .nav-zone.prev::after {
+      left: 20px;
+      transform: translateY(-50%) rotate(45deg);
+    }
+
+    .nav-zone.next::after {
+      right: 20px;
+      transform: translateY(-50%) rotate(-135deg);
+    }
+
+    .calendar-open .nav-zone {
+      display: none;
+    }
+
+    /* Skip hint */
+    .skip-hint {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      font-family: 'Spectral', serif;
+      font-size: 11px;
+      color: rgba(90, 80, 70, 0.5);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      pointer-events: none;
+    }
+
+    .skip-hint span {
+      display: inline-block;
+      padding: 4px 8px;
+      border: 1px solid rgba(90, 80, 70, 0.25);
+      border-radius: 3px;
+      margin-left: 6px;
+    }
+
+    .calendar-open .skip-hint {
+      display: none;
+    }
+
+    /* Calendar toggle button */
+    .calendar-toggle {
+      position: fixed;
+      top: 24px;
+      right: 24px;
+      z-index: 20;
+      font-family: 'Libre Baskerville', serif;
+      font-size: 12px;
+      font-style: italic;
+      letter-spacing: 0.04em;
+      color: rgba(80, 70, 55, 0.6);
+      background: rgba(250, 248, 244, 0.85);
+      border: 1px solid rgba(180, 170, 155, 0.4);
+      padding: 10px 16px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(8px);
+    }
+
+    .calendar-toggle:hover {
+      background: rgba(250, 248, 244, 1);
+      border-color: rgba(160, 150, 135, 0.6);
+      color: rgba(60, 50, 40, 0.9);
+    }
+
+    /* ========== CALENDAR VIEW ========== */
+    .calendar-view {
+      display: none;
+      position: relative;
+      z-index: 2;
+      padding: 80px 40px 60px;
+      min-height: 100vh;
+      width: 100%;
+    }
+
+    .calendar-view.visible {
+      display: block;
+    }
+
+    .calendar-header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .calendar-month {
+      font-family: 'Libre Baskerville', serif;
+      font-size: 22px;
+      font-weight: 400;
+      font-style: italic;
+      color: rgba(80, 70, 55, 0.6);
+      letter-spacing: 0.06em;
+      text-transform: lowercase;
+    }
+
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 12px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .calendar-day-label {
+      font-family: 'Spectral', serif;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: rgba(90, 80, 70, 0.5);
+      text-align: center;
+      padding-bottom: 8px;
+    }
+
+    .calendar-cell {
+      aspect-ratio: 1;
+      position: relative;
+      cursor: pointer;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .calendar-cell:hover {
+      transform: scale(1.03);
+      z-index: 5;
+    }
+
+    .calendar-cell.empty {
+      cursor: default;
+    }
+
+    .calendar-cell.empty:hover {
+      transform: none;
+    }
+
+    .calendar-frame {
+      width: 100%;
+      height: 100%;
+      padding: 4px;
+      border-radius: 1px;
+      background: linear-gradient(145deg, #4A3728 0%, #3D2D20 25%, #564030 50%, #453526 75%, #332418 100%);
+      box-shadow: 
+        0 4px 15px rgba(0, 0, 0, 0.15),
+        0 2px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .calendar-img-wrapper {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .calendar-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .calendar-cell.today .calendar-frame {
+      box-shadow: 
+        0 4px 15px rgba(0, 0, 0, 0.15),
+        0 2px 6px rgba(0, 0, 0, 0.1),
+        0 0 0 2px rgba(180, 160, 120, 0.6);
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .calendar-grid {
+        grid-template-columns: repeat(5, 1fr);
+        gap: 10px;
+      }
+      .calendar-day-label {
+        display: none;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .artwork {
+        max-width: 72vw;
+        max-height: 48vh;
+      }
+
+      .mat {
+        padding: 18px;
+      }
+
+      .placard {
+        max-width: 85vw;
+        margin-top: 24px;
+      }
+
+      .placard-text {
+        font-size: 13px;
+        padding: 12px 16px;
+      }
+
+      .skip-hint {
+        display: none;
+      }
+
+      .nav-zone {
+        width: 20%;
+      }
+
+      .calendar-view {
+        padding: 70px 20px 40px;
+      }
+
+      .calendar-grid {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+      }
+
+      .calendar-toggle {
+        top: 16px;
+        right: 16px;
+        padding: 8px 12px;
+        font-size: 10px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .artwork {
+        max-width: 82vw;
+        max-height: 42vh;
+      }
+
+      .mat {
+        padding: 14px;
+      }
+
+      .placard-text {
+        font-size: 12px;
+      }
+
+      .date-inscription {
+        font-size: 9px;
+      }
+
+      .calendar-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
+      }
+
+      .calendar-month {
+        font-size: 22px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="gallery-wall"></div>
+  <div class="lighting"></div>
+  <div class="vignette"></div>
+
+  <button class="calendar-toggle" id="calendarToggle">month</button>
+
+  <div class="nav-zone prev" onclick="navigate(-1)"></div>
+  <div class="nav-zone next" onclick="navigate(1)"></div>
+
+  <!-- Single artwork view -->
+  <div class="single-view" id="singleView">
+    <div class="frame maple" id="frame">
+      <div class="mat">
+        <img class="artwork" id="artwork" src="" alt="Daily artwork">
+        <div class="date-inscription" id="dateInscription"></div>
+      </div>
+    </div>
+    <div class="placard">
+      <p class="placard-text" id="quote"></p>
+    </div>
+  </div>
+
+  <!-- Calendar view -->
+  <div class="calendar-view" id="calendarView">
+    <div class="calendar-header">
+      <h1 class="calendar-month" id="calendarMonth"></h1>
+    </div>
+    <div class="calendar-grid" id="calendarGrid"></div>
+  </div>
+
+  <div class="skip-hint">
+    press <span>→</span> to advance
+  </div>
+
+  <script>
+    const quotes = [
+      "The job of the artist is always to deepen the mystery.",
+      "The details are not the details. They make the design.",
+      "I am seeking. I am striving. I am in it with all my heart.",
+      "To practice any art, no matter how well or badly, is a way to make your soul grow.",
+      "Every act of creation is first an act of destruction.",
+      "Have nothing in your houses that you do not know to be useful or believe to be beautiful.",
+      "Color is a power which directly influences the soul.",
+      "The painter has the universe in his mind and hands.",
+      "We do not see things as they are, we see them as we are.",
+      "Without atmosphere a painting is nothing.",
+      "Form follows function - that has been misunderstood. Form and function should be one.",
+      "I dream my painting and then I paint my dream.",
+      "A line is a dot that went for a walk.",
+      "Space and light and order. Those are things that people need just as much as bread or a place to sleep.",
+      "The position of the artist is humble. He is essentially a channel.",
+      "Art is not what you see, but what you make others see.",
+      "The painter should not paint what he sees, but what will be seen.",
+      "To live is the rarest thing in the world. Most people exist, that is all.",
+      "I found I could say things with color and shapes that I couldn't say any other way.",
+      "The heart has its reasons which reason knows nothing of.",
+      "A room is not a room without natural light.",
+      "Art washes away from the soul the dust of everyday life.",
+      "The eye sees only what the mind is prepared to comprehend.",
+      "Every child is an artist. The problem is how to remain one once we grow up.",
+      "Creativity takes courage.",
+      "Learn the rules like a professional so you can break them like an artist.",
+      "I would like to paint the way a bird sings.",
+      "If you hear a voice within you say you cannot paint, then by all means paint and that voice will be silenced.",
+      "The chief enemy of creativity is good sense.",
+      "Life shrinks or expands in proportion to one's courage.",
+      "Perfection is achieved not when there is nothing more to add, but when there is nothing left to take away."
+    ];
+
+    let currentDay;
+    let dayOffset = 0;
+    const totalImages = 31;
+    let calendarVisible = false;
+    
+    const frameStyles = ['maple', 'mahogany', 'walnut'];
+    
+    function getFrameStyle(day) {
+      return frameStyles[(day - 1) % 3];
+    }
+
+    function getRealDay() {
+      return new Date().getDate();
+    }
+
+    function formatDate(dayNum) {
+      const now = new Date();
+      const date = new Date(now.getFullYear(), now.getMonth(), dayNum);
+      const options = { day: 'numeric', month: 'short', year: 'numeric' };
+      return date.toLocaleDateString('en-GB', options).toLowerCase();
+    }
+
+    function formatShortDate(dayNum) {
+      const now = new Date();
+      const date = new Date(now.getFullYear(), now.getMonth(), dayNum);
+      const options = { day: 'numeric', month: 'short' };
+      return date.toLocaleDateString('en-GB', options).toLowerCase();
+    }
+
+    function getImageSrc(index) {
+      return `images/${index}.jpg`;
+    }
+
+    function loadContent(day) {
+      currentDay = day;
+      const imageIndex = ((day - 1) % totalImages) + 1;
+      
+      const container = document.getElementById('singleView');
+      container.style.opacity = '0';
+      container.style.transform = 'translateY(10px)';
+      
+      setTimeout(() => {
+        // Update frame style
+        const frame = document.getElementById('frame');
+        frame.className = 'frame ' + getFrameStyle(imageIndex);
+        
+        const artwork = document.getElementById('artwork');
+        artwork.src = getImageSrc(imageIndex);
+        
+        artwork.onerror = function() {
+          if (this.src.endsWith('.jpg')) {
+            this.src = `images/${imageIndex}.jpeg`;
+          } else if (this.src.endsWith('.jpeg')) {
+            this.src = `images/${imageIndex}.png`;
+          } else if (this.src.endsWith('.png')) {
+            this.src = `images/${imageIndex}.webp`;
+          }
+        };
+
+        document.getElementById('dateInscription').textContent = formatDate(day);
+
+        const quoteIndex = (day - 1) % quotes.length;
+        document.getElementById('quote').textContent = quotes[quoteIndex];
+        
+        setTimeout(() => {
+          container.style.transition = 'opacity 0.8s ease, transform 0.8s ease';
+          container.style.opacity = '1';
+          container.style.transform = 'translateY(0)';
+        }, 100);
+      }, 300);
+    }
+
+    function navigate(direction) {
+      if (calendarVisible) return;
+      
+      dayOffset += direction;
+      const newDay = getRealDay() + dayOffset;
+      
+      let wrappedDay = ((newDay - 1) % 31) + 1;
+      if (wrappedDay < 1) wrappedDay += 31;
+      
+      loadContent(wrappedDay);
+    }
+
+    function buildCalendar() {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = now.getMonth();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const firstDayOfWeek = new Date(year, month, 1).getDay();
+      const today = now.getDate();
+
+      // Month header
+      const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                          'July', 'August', 'September', 'October', 'November', 'December'];
+      document.getElementById('calendarMonth').textContent = `${monthNames[month]} ${year}`;
+
+      const grid = document.getElementById('calendarGrid');
+      grid.innerHTML = '';
+
+      // Day labels
+      const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      dayLabels.forEach(label => {
+        const labelEl = document.createElement('div');
+        labelEl.className = 'calendar-day-label';
+        labelEl.textContent = label;
+        grid.appendChild(labelEl);
+      });
+
+      // Empty cells for days before month starts
+      for (let i = 0; i < firstDayOfWeek; i++) {
+        const empty = document.createElement('div');
+        empty.className = 'calendar-cell empty';
+        grid.appendChild(empty);
+      }
+
+      // Days with images
+      for (let day = 1; day <= daysInMonth; day++) {
+        const imageIndex = ((day - 1) % totalImages) + 1;
+        
+        const cell = document.createElement('div');
+        cell.className = 'calendar-cell' + (day === today ? ' today' : '');
+        cell.onclick = () => selectDay(day);
+
+        cell.innerHTML = `
+          <div class="calendar-frame">
+            <div class="calendar-img-wrapper">
+              <img class="calendar-img" src="${getImageSrc(imageIndex)}" alt="Day ${day}"
+                   onerror="this.onerror=null; this.src='images/${imageIndex}.jpeg';">
+            </div>
+          </div>
+        `;
+
+        grid.appendChild(cell);
+      }
+    }
+
+    function selectDay(day) {
+      dayOffset = day - getRealDay();
+      loadContent(day);
+      toggleCalendar();
+    }
+
+    function toggleCalendar() {
+      calendarVisible = !calendarVisible;
+      
+      const singleView = document.getElementById('singleView');
+      const calendarView = document.getElementById('calendarView');
+      const toggleBtn = document.getElementById('calendarToggle');
+      
+      if (calendarVisible) {
+        document.body.classList.add('calendar-open');
+        singleView.classList.add('hidden');
+        calendarView.classList.add('visible');
+        toggleBtn.textContent = 'back';
+        buildCalendar();
+      } else {
+        document.body.classList.remove('calendar-open');
+        singleView.classList.remove('hidden');
+        calendarView.classList.remove('visible');
+        toggleBtn.textContent = 'month';
+      }
+    }
+
+    // Event listeners
+    document.getElementById('calendarToggle').addEventListener('click', toggleCalendar);
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && calendarVisible) {
+        toggleCalendar();
+      } else if (e.key === 'ArrowRight' || e.key === ' ') {
+        e.preventDefault();
+        navigate(1);
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        navigate(-1);
+      }
+    });
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      loadContent(getRealDay());
+    });
+  </script>
+</body>
+</html>
